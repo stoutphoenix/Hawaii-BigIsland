@@ -383,9 +383,9 @@ Kilauea was continuously active from 2015-2018, with the major 2018 eruption mar
 
 tsunami_summary <- data$tsunami_zones %>%
   mutate(
+    pct_total = round(population_affected / sum(population_affected) * 100, 1),
     area_sq_mi = comma(area_sq_mi),
-    population_affected = comma(population_affected),
-    pct_total = round(population_affected / sum(as.numeric(gsub(",", "", population_affected))) * 100, 1)
+    population_affected = comma(population_affected)
   )
 
 kable(tsunami_summary,
