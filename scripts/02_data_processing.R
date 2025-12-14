@@ -37,17 +37,26 @@ hawaii_colors <- c(
 #' Load all project data
 #' @return List of all data frames
 load_all_data <- function() {
+  # Determine data directory path (works from project root or reports/)
+  data_dir <- if (dir.exists("data")) {
+    "data"
+  } else if (dir.exists("../data")) {
+    "../data"
+  } else {
+    stop("Cannot find data directory. Run from project root or reports/ folder.")
+  }
+
   list(
-    demographics = readRDS("data/demographics.rds"),
-    race_composition = readRDS("data/race_composition.rds"),
-    climate_monthly = readRDS("data/climate_monthly.rds"),
-    climate_annual = readRDS("data/climate_annual.rds"),
-    economics = readRDS("data/economics.rds"),
-    industry_composition = readRDS("data/industry_composition.rds"),
-    disasters = readRDS("data/disasters.rds"),
-    volcanic_activity = readRDS("data/volcanic_activity.rds"),
-    tsunami_zones = readRDS("data/tsunami_zones.rds"),
-    locations = readRDS("data/locations.rds")
+    demographics = readRDS(file.path(data_dir, "demographics.rds")),
+    race_composition = readRDS(file.path(data_dir, "race_composition.rds")),
+    climate_monthly = readRDS(file.path(data_dir, "climate_monthly.rds")),
+    climate_annual = readRDS(file.path(data_dir, "climate_annual.rds")),
+    economics = readRDS(file.path(data_dir, "economics.rds")),
+    industry_composition = readRDS(file.path(data_dir, "industry_composition.rds")),
+    disasters = readRDS(file.path(data_dir, "disasters.rds")),
+    volcanic_activity = readRDS(file.path(data_dir, "volcanic_activity.rds")),
+    tsunami_zones = readRDS(file.path(data_dir, "tsunami_zones.rds")),
+    locations = readRDS(file.path(data_dir, "locations.rds"))
   )
 }
 
