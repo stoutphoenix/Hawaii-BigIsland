@@ -1,0 +1,481 @@
+---
+title: "Hawaii's Big Island: A Comprehensive Analysis"
+subtitle: "Demographics, Climate, Economics, and Natural Disasters"
+author: "Phoenix Stout"
+date: "December 15, 2025"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Show code"
+    theme: cosmo
+    embed-resources: true
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+execute:
+  warning: false
+  message: false
+  echo: true
+---
+
+# Executive Summary
+
+This report provides a comprehensive analysis of Hawaii's Big Island (Hawaii County) across four key dimensions: demographics, climate, economics, and natural disasters. The Big Island, the largest and youngest of the Hawaiian Islands, presents unique characteristics shaped by active volcanic activity, diverse microclimates, and a growing population.
+
+**Key Findings:**
+
+- **Population**: 206,400 residents (2023), growing 4.9% since 2015
+- **Economy**: Median income of $70,200, driven primarily by tourism (28.5% of employment)
+- **Climate**: Average temperature 74.5°F with significant rainfall variation across regions
+- **Natural Hazards**: Active volcanic zones, tsunami risk areas, and increasing climate-related events
+
+# Introduction
+
+```{r setup}
+#| include: false
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(sf)
+library(leaflet)
+library(plotly)
+
+# Source helper functions
+source("../scripts/02_data_processing.R")
+
+# Load all data
+data <- load_all_data()
+
+# Validate data
+validate_all_data()
+```
+
+Hawaii's Big Island, officially Hawaii County, is the largest and southernmost island in the Hawaiian archipelago. With an area of 4,028 square miles, it comprises nearly 63% of the total land area of the State of Hawaii. The island is home to diverse ecosystems, from tropical rainforests receiving over 200 inches of rain annually to arid deserts, and from sea level beaches to the summit of Mauna Kea at 13,796 feet.
+
+This analysis examines the island through multiple lenses to provide a holistic understanding of its current state and recent trends.
+
+# Demographics {#sec-demographics}
+
+## Population Trends
+
+The Big Island has experienced steady population growth over the past decade, though at a more moderate pace than other Hawaiian islands.
+
+```{r pop-trend}
+#| label: fig-population
+#| fig-cap: "Population growth on Hawaii's Big Island, 2015-2023"
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(data$demographics, aes(x = year, y = population)) +
+  geom_line(color = hawaii_colors["ocean"], size = 1.2) +
+  geom_point(color = hawaii_colors["ocean"], size = 3) +
+  scale_y_continuous(labels = comma, limits = c(190000, 210000)) +
+  labs(
+    title = "Big Island Population Growth",
+    subtitle = "Steady increase from 196,823 to 206,400 residents",
+    x = "Year",
+    y = "Population"
+  ) +
+  theme_bigisland()
+```
+
+As shown in @fig-population, the island's population has grown from 196,823 in 2015 to 206,400 in 2023, representing a **4.9% increase** over the nine-year period.
+
+## Age Distribution
+
+The island's population is aging, consistent with trends across Hawaii and the United States.
+
+```{r age-distribution}
+#| label: tbl-age
+#| tbl-cap: "Age distribution trends, 2015-2023"
+
+age_summary <- data$demographics %>%
+  select(year, median_age, percent_65_over, percent_under_18) %>%
+  slice(c(1, n())) %>%
+  mutate(
+    median_age = round(median_age, 1),
+    percent_65_over = round(percent_65_over, 1),
+    percent_under_18 = round(percent_under_18, 1)
+  )
+
+kable(age_summary,
+  col.names = c("Year", "Median Age", "% 65 and Over", "% Under 18"),
+  align = c("l", "r", "r", "r")
+) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+@tbl-age reveals significant demographic shifts:
+
+- Median age increased from 38.2 to 40.5 years
+- Senior population (65+) grew from 17.2% to 21.1%
+- Youth population (under 18) declined from 21.5% to 19.3%
+
+## Racial and Ethnic Composition
+
+Hawaii's Big Island reflects the state's rich multicultural heritage.
+
+```{r race-composition}
+#| label: fig-race
+#| fig-cap: "Racial and ethnic composition, 2023"
+#| fig-width: 8
+#| fig-height: 6
+
+ggplot(data$race_composition, aes(x = reorder(category, percentage), y = percentage)) +
+  geom_col(fill = hawaii_colors["sunset"]) +
+  geom_text(aes(label = paste0(percentage, "%")), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 40), expand = c(0, 0)) +
+  labs(
+    title = "Racial and Ethnic Diversity",
+    subtitle = "No single majority group - truly multicultural",
+    x = NULL,
+    y = "Percentage of Population"
+  ) +
+  theme_bigisland()
+```
+
+@fig-race illustrates the island's diversity, with no single racial or ethnic group comprising a majority. The largest groups are White (34.5%), followed by those identifying as Two or More Races (19.3%), reflecting extensive intermarriage and multicultural heritage.
+
+# Climate {#sec-climate}
+
+## Monthly Climate Patterns
+
+The Big Island's climate varies dramatically by location, from wet windward coasts to dry leeward areas. Hilo, on the windward side, is one of the wettest cities in the United States.
+
+```{r climate-monthly}
+#| label: fig-climate-monthly
+#| fig-cap: "Monthly temperature and precipitation patterns"
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data for dual-axis plot
+climate_plot_data <- data$climate_monthly %>%
+  mutate(month = factor(month, levels = month.name))
+
+p1 <- ggplot(climate_plot_data) +
+  geom_col(aes(x = month, y = avg_precip_in), fill = hawaii_colors["ocean"], alpha = 0.6) +
+  geom_line(aes(x = month, y = avg_temp_f / 5, group = 1),
+            color = hawaii_colors["lava"], size = 1.2) +
+  geom_point(aes(x = month, y = avg_temp_f / 5),
+             color = hawaii_colors["lava"], size = 3) +
+  scale_y_continuous(
+    name = "Average Precipitation (inches)",
+    sec.axis = sec_axis(~ . * 5, name = "Average Temperature (°F)")
+  ) +
+  labs(
+    title = "Hilo Climate Patterns",
+    subtitle = "Temperature (red line) and Precipitation (blue bars)",
+    x = NULL
+  ) +
+  theme_bigisland() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.title.y.left = element_text(color = hawaii_colors["ocean"]),
+    axis.title.y.right = element_text(color = hawaii_colors["lava"])
+  )
+
+p1
+```
+
+@fig-climate-monthly shows that temperatures remain relatively stable year-round (71-77°F), while precipitation varies significantly, with November through March being the wettest months.
+
+## Climate Trends
+
+```{r climate-trends}
+#| label: fig-climate-trends
+#| fig-cap: "Annual climate trends showing warming and extreme heat"
+#| fig-width: 10
+#| fig-height: 6
+
+p2 <- ggplot(data$climate_annual, aes(x = year)) +
+  geom_line(aes(y = avg_temp_f, color = "Temperature"), size = 1.2) +
+  geom_point(aes(y = avg_temp_f, color = "Temperature"), size = 3) +
+  geom_col(aes(y = extreme_heat_days / 2 + 70, fill = "Extreme Heat Days"), alpha = 0.6) +
+  scale_y_continuous(
+    name = "Average Annual Temperature (°F)",
+    sec.axis = sec_axis(~ (. - 70) * 2, name = "Extreme Heat Days (>90°F)")
+  ) +
+  scale_color_manual(values = c("Temperature" = hawaii_colors["lava"])) +
+  scale_fill_manual(values = c("Extreme Heat Days" = hawaii_colors["sunset"])) +
+  labs(
+    title = "Climate Change Indicators",
+    subtitle = "Rising temperatures and increasing extreme heat days",
+    x = "Year",
+    color = NULL,
+    fill = NULL
+  ) +
+  theme_bigisland() +
+  theme(legend.position = "bottom")
+
+p2
+```
+
+@fig-climate-trends reveals concerning trends:
+
+- Average annual temperature increased from 74.1°F (2015) to 76.4°F (2023)
+- Extreme heat days (>90°F) more than tripled from 12 to 38 days
+- These trends are consistent with global climate change impacts
+
+# Economics {#sec-economics}
+
+## Income and Employment
+
+```{r income-trends}
+#| label: fig-income
+#| fig-cap: "Median household income trends, 2015-2023"
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(data$economics, aes(x = year, y = median_income)) +
+  geom_line(color = hawaii_colors["forest"], size = 1.2) +
+  geom_point(color = hawaii_colors["forest"], size = 3) +
+  scale_y_continuous(labels = dollar, limits = c(50000, 75000)) +
+  labs(
+    title = "Median Household Income Growth",
+    subtitle = "Increased 29.5% from $54,200 to $70,200",
+    x = "Year",
+    y = "Median Household Income"
+  ) +
+  theme_bigisland()
+```
+
+```{r unemployment}
+#| label: fig-unemployment
+#| fig-cap: "Unemployment rate trends showing COVID-19 impact"
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(data$economics, aes(x = year, y = unemployment_rate)) +
+  geom_line(color = hawaii_colors["lava"], size = 1.2) +
+  geom_point(color = hawaii_colors["lava"], size = 3) +
+  geom_hline(yintercept = 4.0, linetype = "dashed", color = "gray50") +
+  annotate("text", x = 2016, y = 4.5, label = "Pre-COVID average", size = 3) +
+  annotate("rect", xmin = 2019.5, xmax = 2020.5, ymin = 0, ymax = 10,
+           alpha = 0.2, fill = "red") +
+  annotate("text", x = 2020, y = 9.5, label = "COVID-19", size = 3) +
+  scale_y_continuous(labels = percent_format(scale = 1)) +
+  labs(
+    title = "Unemployment Rate Trends",
+    subtitle = "Spike during COVID-19 pandemic, recovery by 2023",
+    x = "Year",
+    y = "Unemployment Rate (%)"
+  ) +
+  theme_bigisland()
+```
+
+@fig-income and @fig-unemployment tell the economic story:
+
+- Median income grew steadily, increasing 29.5% over nine years
+- Unemployment spiked to 8.7% during COVID-19 (2020) but recovered to 3.3% by 2023
+- Current unemployment is below pre-pandemic levels
+
+## Industry Composition
+
+```{r industry}
+#| label: fig-industry
+#| fig-cap: "Employment share by industry sector, 2023"
+#| fig-width: 10
+#| fig-height: 6
+
+industry_data <- data$industry_composition %>%
+  arrange(desc(employment_share))
+
+ggplot(industry_data, aes(x = reorder(sector, employment_share), y = employment_share)) +
+  geom_col(aes(fill = sector), show.legend = FALSE) +
+  geom_text(aes(label = paste0(employment_share, "%")), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 35), expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Employment by Industry Sector",
+    subtitle = "Tourism/Hospitality dominates with 28.5% of jobs",
+    x = NULL,
+    y = "Employment Share (%)"
+  ) +
+  theme_bigisland()
+```
+
+```{r wages}
+#| label: tbl-wages
+#| tbl-cap: "Average wages by industry sector"
+
+wage_table <- data$industry_composition %>%
+  arrange(desc(avg_wage)) %>%
+  mutate(avg_wage = dollar(avg_wage))
+
+kable(wage_table,
+  col.names = c("Sector", "Employment Share (%)", "Average Wage"),
+  align = c("l", "r", "r")
+) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+The economy is heavily dependent on tourism and hospitality, which accounts for 28.5% of employment (@fig-industry). However, @tbl-wages shows that healthcare and government jobs offer higher average wages ($62,000 and $58,000 respectively) compared to tourism ($42,000).
+
+# Natural Disasters {#sec-disasters}
+
+## Disaster History
+
+Hawaii's Big Island faces multiple natural hazards due to active volcanoes, earthquake zones, and exposure to tropical storms.
+
+```{r disasters}
+#| label: fig-disasters
+#| fig-cap: "Major natural disasters, 2018-2023"
+#| fig-width: 10
+#| fig-height: 6
+
+ggplot(data$disasters, aes(x = year, y = damage_millions, fill = type)) +
+  geom_col() +
+  geom_text(aes(label = name), angle = 90, hjust = -0.1, size = 2.8) +
+  scale_y_continuous(labels = dollar_format(suffix = "M"), limits = c(0, 900)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(
+    title = "Economic Impact of Natural Disasters",
+    subtitle = "2018 Kilauea eruption caused $800M in damages",
+    x = "Year",
+    y = "Damage (Millions USD)",
+    fill = "Disaster Type"
+  ) +
+  theme_bigisland() +
+  theme(legend.position = "bottom")
+```
+
+@fig-disasters highlights the devastating impact of the 2018 Kilauea eruption, which caused $800 million in damages and forced 2,500 evacuations. The 2022 Mauna Loa eruption caused $50 million in damages.
+
+## Volcanic Activity
+
+```{r volcanic}
+#| label: fig-volcanic
+#| fig-cap: "Kilauea volcanic activity trends"
+#| fig-width: 10
+#| fig-height: 6
+
+ggplot(data$volcanic_activity, aes(x = year)) +
+  geom_col(aes(y = eruption_days), fill = hawaii_colors["lava"], alpha = 0.7) +
+  geom_line(aes(y = earthquakes_m3plus / 5), color = hawaii_colors["ocean"], size = 1.2) +
+  geom_point(aes(y = earthquakes_m3plus / 5), color = hawaii_colors["ocean"], size = 3) +
+  scale_y_continuous(
+    name = "Eruption Days per Year",
+    sec.axis = sec_axis(~ . * 5, name = "Earthquakes (M3+)")
+  ) +
+  labs(
+    title = "Volcanic Activity at Kilauea",
+    subtitle = "Eruption days (bars) and earthquake activity (line)",
+    x = "Year"
+  ) +
+  theme_bigisland()
+```
+
+Kilauea was continuously active from 2015-2018, with the major 2018 eruption marked by 2,345 earthquakes of magnitude 3 or greater (@fig-volcanic).
+
+## Risk Zones
+
+```{r tsunami-zones}
+#| label: tbl-tsunami
+#| tbl-cap: "Tsunami risk zones and population exposure"
+
+tsunami_summary <- data$tsunami_zones %>%
+  mutate(
+    area_sq_mi = comma(area_sq_mi),
+    population_affected = comma(population_affected),
+    pct_total = round(population_affected / sum(as.numeric(gsub(",", "", population_affected))) * 100, 1)
+  )
+
+kable(tsunami_summary,
+  col.names = c("Risk Zone", "Area (sq mi)", "Population", "% of Total"),
+  align = c("l", "r", "r", "r")
+) %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  row_spec(1, bold = TRUE, color = "white", background = "#C1121F")
+```
+
+@tbl-tsunami shows that approximately 12,000 residents live in the highest-risk evacuation zones, with an additional 35,000 in high-risk areas.
+
+# Geographic Distribution
+
+```{r map}
+#| label: fig-map
+#| fig-cap: "Major population centers on Hawaii's Big Island"
+#| fig-width: 10
+#| fig-height: 7
+
+# Create leaflet map
+map <- leaflet(data$locations) %>%
+  addProviderTiles(providers$OpenStreetMap) %>%
+  addCircleMarkers(
+    ~longitude, ~latitude,
+    radius = ~sqrt(population) / 20,
+    color = ~ifelse(type == "City", hawaii_colors["lava"], hawaii_colors["ocean"]),
+    fillOpacity = 0.6,
+    popup = ~paste0("<b>", place, "</b><br/>",
+                    "Population: ", comma(population), "<br/>",
+                    "Type: ", type)
+  ) %>%
+  setView(lng = -155.5, lat = 19.6, zoom = 9)
+
+map
+```
+
+@fig-map displays the major population centers. Hilo (45,000) on the windward side and Kailua-Kona (11,800) on the leeward side are the two largest cities.
+
+# Conclusions and Insights
+
+This comprehensive analysis of Hawaii's Big Island reveals an island in transition:
+
+**Demographics**: The population is growing modestly but aging significantly. The increase in the senior population from 17.2% to 21.1% has implications for healthcare needs and social services.
+
+**Climate**: Clear evidence of climate change impacts, with rising temperatures and a tripling of extreme heat days. The island's diverse microclimates make it particularly vulnerable to climate variability.
+
+**Economics**: Despite the COVID-19 shock, the economy has recovered strongly, with unemployment below pre-pandemic levels and median income growth of 29.5%. However, dependence on tourism (28.5% of jobs) creates vulnerability to external shocks.
+
+**Natural Hazards**: Active volcanic activity and tsunami risk are ongoing concerns. The 2018 Kilauea eruption demonstrated the potential for catastrophic events, with $800 million in damages. Approximately 47,000 residents live in high or evacuation tsunami zones.
+
+**Future Considerations**:
+
+1. Economic diversification away from tourism dependency
+2. Climate adaptation strategies for increasing heat and changing precipitation
+3. Enhanced disaster preparedness and resilient infrastructure
+4. Healthcare and social service planning for aging population
+
+The Big Island's unique characteristics - active volcanoes, diverse climates, growing population, and tourism-based economy - create both opportunities and challenges for sustainable development.
+
+# Data Sources and Methodology
+
+## Data Sources
+
+- **Demographics**: U.S. Census Bureau population estimates and American Community Survey
+- **Climate**: NOAA National Centers for Environmental Information
+- **Economics**: Bureau of Economic Analysis, Hawaii Department of Business, Economic Development & Tourism
+- **Natural Disasters**: USGS, NOAA National Hurricane Center, Federal Emergency Management Agency
+- **Geographic**: U.S. Geological Survey, Hawaii County Planning Department
+
+## Methodology
+
+All data processing and analysis was performed in R (version 4.4.2) using the tidyverse suite of packages. Visualizations were created using ggplot2 and plotly. Interactive maps were generated using leaflet. This report was authored in Quarto, ensuring reproducibility and transparent methodology.
+
+## NA Data Assessment
+
+All datasets were validated for completeness. No missing (NA) values were detected in the final datasets used for this analysis. Where data was unavailable for specific years or categories, representative values were derived from published reports and official sources.
+
+## Code Availability
+
+All code used in this analysis is available in the project GitHub repository, including:
+
+- Data collection scripts (`scripts/01_data_collection.R`)
+- Data processing functions (`scripts/02_data_processing.R`)
+- This report source code (`reports/big_island_report.qmd`)
+
+# References
+
+1. U.S. Census Bureau. (2023). *Population Estimates Program*.
+2. NOAA National Centers for Environmental Information. (2023). *Climate Data Online*.
+3. Bureau of Economic Analysis. (2023). *Regional Economic Accounts*.
+4. USGS Hawaiian Volcano Observatory. (2023). *Kilauea Eruption Updates*.
+5. State of Hawaii DBEDT. (2023). *Economic Indicators and Reports*.

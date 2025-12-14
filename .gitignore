@@ -1,0 +1,17 @@
+# R files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# OS files
+.DS_Store
+
+# Data cache (comment out to include data files)
+# *.rds
+
+# Shiny
+rsconnect/
+
+# Claude Code
+.claude/

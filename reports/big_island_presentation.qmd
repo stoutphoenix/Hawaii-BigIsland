@@ -1,0 +1,501 @@
+---
+title: "Hawaii's Big Island"
+subtitle: "Key Insights and Trends"
+author: "Phoenix Stout"
+date: "December 15, 2025"
+format:
+  revealjs:
+    theme: serif
+    slide-number: true
+    chalkboard: true
+    preview-links: auto
+    logo: ""
+    css: custom.css
+    footer: "MA615 Final Project | Phoenix Stout"
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse)
+library(knitr)
+library(scales)
+library(plotly)
+
+# Source helper functions
+source("../scripts/02_data_processing.R")
+
+# Load all data
+data <- load_all_data()
+
+# Color palette
+hawaii_colors <- c(
+  ocean = "#006BA6",
+  lava = "#C1121F",
+  forest = "#2D6A4F",
+  sand = "#F4A261",
+  sunset = "#E76F51",
+  sky = "#219EBC"
+)
+```
+
+## Overview {background-color="#006BA6"}
+
+::: {.columns}
+::: {.column width="50%"}
+### Hawaii's Big Island
+
+- Largest Hawaiian Island
+- 4,028 square miles
+- 206,400 residents (2023)
+- Active volcanic zones
+- Diverse microclimates
+:::
+
+::: {.column width="50%"}
+### Analysis Focus
+
+1. Demographics
+2. Climate
+3. Economics
+4. Natural Disasters
+:::
+:::
+
+## Executive Summary
+
+::: {.incremental}
+- **Population**: Growing 4.9% since 2015, but aging rapidly
+- **Economy**: Tourism-dependent with $70,200 median income
+- **Climate**: Warming trends, extreme heat days tripled
+- **Hazards**: $800M in volcanic damage (2018), ongoing tsunami risk
+:::
+
+# Demographics {background-color="#2D6A4F"}
+
+## Population Growth
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+p <- ggplot(data$demographics, aes(x = year, y = population)) +
+  geom_line(color = hawaii_colors["ocean"], size = 2) +
+  geom_point(color = hawaii_colors["ocean"], size = 4) +
+  scale_y_continuous(labels = comma, limits = c(190000, 210000)) +
+  labs(
+    title = "Steady Population Growth",
+    subtitle = "196,823 (2015) → 206,400 (2023)",
+    x = NULL,
+    y = "Population"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(face = "bold", size = 20))
+
+ggplotly(p) %>%
+  layout(hovermode = "x unified")
+```
+
+## Aging Population
+
+::: {.columns}
+::: {.column width="50%"}
+```{r}
+#| fig-width: 6
+#| fig-height: 5
+
+aging_data <- data$demographics %>%
+  select(year, percent_65_over, percent_under_18) %>%
+  pivot_longer(cols = c(percent_65_over, percent_under_18),
+               names_to = "group", values_to = "percentage") %>%
+  mutate(group = ifelse(group == "percent_65_over", "65 and Over", "Under 18"))
+
+ggplot(aging_data, aes(x = year, y = percentage, color = group)) +
+  geom_line(size = 1.5) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("65 and Over" = hawaii_colors["lava"],
+                                 "Under 18" = hawaii_colors["ocean"])) +
+  labs(
+    title = "Age Distribution Shift",
+    x = NULL,
+    y = "Percentage",
+    color = "Age Group"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "bottom")
+```
+:::
+
+::: {.column width="50%"}
+### Key Trends
+
+- Median age: **38.2 → 40.5**
+- Seniors (65+): **17.2% → 21.1%**
+- Youth (<18): **21.5% → 19.3%**
+
+### Implications
+
+- Healthcare demands ↑
+- School enrollment ↓
+- Workforce challenges
+:::
+:::
+
+## Cultural Diversity
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+ggplot(data$race_composition, aes(x = reorder(category, percentage), y = percentage)) +
+  geom_col(fill = hawaii_colors["sunset"], width = 0.7) +
+  geom_text(aes(label = paste0(percentage, "%")),
+            hjust = -0.2, size = 6, fontface = "bold") +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 40), expand = c(0, 0)) +
+  labs(
+    title = "No Single Majority - Truly Multicultural",
+    x = NULL,
+    y = "Percentage of Population"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(face = "bold", size = 18))
+```
+
+# Climate {background-color="#219EBC"}
+
+## Monthly Patterns
+
+```{r}
+#| fig-width: 11
+#| fig-height: 6
+
+climate_data <- data$climate_monthly %>%
+  mutate(month = factor(month, levels = month.name))
+
+ggplot(climate_data) +
+  geom_col(aes(x = month, y = avg_precip_in),
+           fill = hawaii_colors["ocean"], alpha = 0.6, width = 0.7) +
+  geom_line(aes(x = month, y = avg_temp_f / 5, group = 1),
+            color = hawaii_colors["lava"], size = 1.5) +
+  geom_point(aes(x = month, y = avg_temp_f / 5),
+             color = hawaii_colors["lava"], size = 4) +
+  scale_y_continuous(
+    name = "Precipitation (inches)",
+    sec.axis = sec_axis(~ . * 5, name = "Temperature (°F)")
+  ) +
+  labs(
+    title = "Hilo Climate: Stable Temperature, Variable Rainfall",
+    x = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    plot.title = element_text(face = "bold", size = 17),
+    axis.title.y.left = element_text(color = hawaii_colors["ocean"], size = 14),
+    axis.title.y.right = element_text(color = hawaii_colors["lava"], size = 14)
+  )
+```
+
+## Climate Change Signals
+
+```{r}
+#| fig-width: 11
+#| fig-height: 6
+
+ggplot(data$climate_annual, aes(x = year)) +
+  geom_line(aes(y = avg_temp_f), color = hawaii_colors["lava"], size = 1.8) +
+  geom_point(aes(y = avg_temp_f), color = hawaii_colors["lava"], size = 4) +
+  geom_col(aes(y = extreme_heat_days / 2 + 70),
+           fill = hawaii_colors["sunset"], alpha = 0.5) +
+  scale_y_continuous(
+    name = "Average Temperature (°F)",
+    sec.axis = sec_axis(~ (. - 70) * 2, name = "Extreme Heat Days")
+  ) +
+  labs(
+    title = "Warming Trend: Extreme Heat Days Tripled",
+    subtitle = "12 days (2015) → 38 days (2023)",
+    x = "Year"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(face = "bold", size = 18))
+```
+
+::: {.notes}
+Temperature increased 2.3°F from 2015 to 2023. Extreme heat days (above 90°F) more than tripled.
+:::
+
+# Economics {background-color="#F4A261"}
+
+## Income Growth
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+p2 <- ggplot(data$economics, aes(x = year, y = median_income)) +
+  geom_line(color = hawaii_colors["forest"], size = 2) +
+  geom_point(color = hawaii_colors["forest"], size = 4) +
+  scale_y_continuous(labels = dollar, limits = c(50000, 75000)) +
+  labs(
+    title = "Median Income: 29.5% Growth",
+    subtitle = "$54,200 → $70,200",
+    x = NULL,
+    y = "Median Household Income"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(face = "bold", size = 20))
+
+ggplotly(p2) %>%
+  layout(hovermode = "x unified")
+```
+
+## Unemployment Recovery
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+ggplot(data$economics, aes(x = year, y = unemployment_rate)) +
+  geom_area(fill = hawaii_colors["lava"], alpha = 0.3) +
+  geom_line(color = hawaii_colors["lava"], size = 2) +
+  geom_point(color = hawaii_colors["lava"], size = 4) +
+  geom_hline(yintercept = 4.0, linetype = "dashed", color = "gray30", size = 1) +
+  annotate("rect", xmin = 2019.5, xmax = 2020.5, ymin = 0, ymax = 10,
+           alpha = 0.15, fill = "red") +
+  annotate("text", x = 2020, y = 9.5, label = "COVID-19",
+           size = 6, fontface = "bold") +
+  scale_y_continuous(labels = percent_format(scale = 1), limits = c(0, 10)) +
+  labs(
+    title = "Unemployment: COVID Spike, Strong Recovery",
+    x = "Year",
+    y = "Unemployment Rate (%)"
+  ) +
+  theme_minimal(base_size = 16) +
+  theme(plot.title = element_text(face = "bold", size = 19))
+```
+
+## Industry Breakdown
+
+::: {.columns}
+::: {.column width="55%"}
+```{r}
+#| fig-width: 7
+#| fig-height: 6
+
+industry_plot <- data$industry_composition %>%
+  arrange(desc(employment_share)) %>%
+  slice(1:5)
+
+ggplot(industry_plot, aes(x = reorder(sector, employment_share),
+                          y = employment_share)) +
+  geom_col(fill = hawaii_colors["ocean"], width = 0.7) +
+  geom_text(aes(label = paste0(employment_share, "%")),
+            hjust = -0.2, size = 5, fontface = "bold") +
+  coord_flip() +
+  scale_y_continuous(limits = c(0, 35)) +
+  labs(
+    title = "Top 5 Sectors",
+    x = NULL,
+    y = "Employment Share (%)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(face = "bold"))
+```
+:::
+
+::: {.column width="45%"}
+### Tourism Dominance
+
+- **28.5%** of jobs
+- Average wage: **$42,000**
+- Vulnerability to external shocks
+
+### Higher-Paying Sectors
+
+- Healthcare: **$62,000**
+- Government: **$58,000**
+- Construction: **$52,000**
+:::
+:::
+
+# Natural Disasters {background-color="#C1121F"}
+
+## Disaster Impact
+
+```{r}
+#| fig-width: 11
+#| fig-height: 6
+
+ggplot(data$disasters, aes(x = year, y = damage_millions, fill = type)) +
+  geom_col() +
+  scale_y_continuous(labels = dollar_format(suffix = "M"), limits = c(0, 850)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(
+    title = "Economic Impact of Natural Disasters",
+    subtitle = "2018 Kilauea Eruption: $800M damage, 2,500 evacuations",
+    x = "Year",
+    y = "Damage (Millions USD)",
+    fill = "Disaster Type"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold", size = 18)
+  )
+```
+
+## Volcanic Activity
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+ggplot(data$volcanic_activity, aes(x = year)) +
+  geom_col(aes(y = eruption_days), fill = hawaii_colors["lava"], alpha = 0.7) +
+  geom_line(aes(y = earthquakes_m3plus / 5),
+            color = hawaii_colors["ocean"], size = 1.5) +
+  geom_point(aes(y = earthquakes_m3plus / 5),
+             color = hawaii_colors["ocean"], size = 4) +
+  scale_y_continuous(
+    name = "Eruption Days per Year",
+    sec.axis = sec_axis(~ . * 5, name = "Earthquakes (M3+)")
+  ) +
+  labs(
+    title = "Kilauea Activity: Eruptions and Seismic Events",
+    x = "Year"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(plot.title = element_text(face = "bold", size = 17))
+```
+
+::: {.notes}
+2018 saw peak activity with 214 eruption days and 2,345 earthquakes M3+
+:::
+
+## Tsunami Risk
+
+::: {.columns}
+::: {.column width="50%"}
+### Population at Risk
+
+| Zone | Population |
+|------|------------|
+| **Evacuation Zone** | **12,000** |
+| High Risk | 35,000 |
+| Medium Risk | 58,000 |
+| Low Risk | 101,400 |
+
+**Total High/Evac: 47,000** (23% of population)
+:::
+
+::: {.column width="50%"}
+### Risk Factors
+
+- Pacific Ring of Fire
+- Low-lying coastal areas
+- Limited evacuation routes
+- 24/7 warning system active
+
+### Recent Events
+
+- 2011: Japan tsunami
+- Regular warning drills
+- Updated evacuation maps
+:::
+:::
+
+# Key Findings {background-color="#2D6A4F"}
+
+## Synthesis
+
+::: {.incremental}
+**Demographic Challenge**
+- Aging population (21% seniors) → healthcare pressures
+- Declining youth population → workforce concerns
+
+**Economic Vulnerability**
+- Tourism dependence (28.5%) → shock sensitivity
+- Strong recovery post-COVID → resilience
+
+**Climate Concerns**
+- Clear warming trend (+2.3°F)
+- Extreme heat days tripled → adaptation needed
+
+**Persistent Hazards**
+- Active volcanoes ($800M+ damages)
+- 47,000 in tsunami risk zones
+:::
+
+## Strategic Priorities
+
+::: {.columns}
+::: {.column width="50%"}
+### Short Term
+
+1. Disaster preparedness
+2. Climate adaptation
+3. Tourism recovery support
+4. Healthcare capacity
+:::
+
+::: {.column width="50%"}
+### Long Term
+
+1. Economic diversification
+2. Sustainable development
+3. Infrastructure resilience
+4. Demographic planning
+:::
+:::
+
+## Conclusions {background-color="#006BA6"}
+
+::: {.r-fit-text}
+**Hawaii's Big Island stands at a crossroads**
+:::
+
+<br>
+
+::: {.columns}
+::: {.column width="50%"}
+### Strengths
+- Economic recovery
+- Cultural diversity
+- Natural beauty
+- Tourism appeal
+:::
+
+::: {.column width="50%"}
+### Challenges
+- Climate change
+- Natural hazards
+- Aging population
+- Economic concentration
+:::
+:::
+
+<br>
+
+**Sustainable planning is essential for the island's future prosperity and resilience**
+
+## {background-color="#219EBC"}
+
+::: {.r-fit-text}
+Questions?
+:::
+
+<br><br>
+
+::: {.center}
+**Phoenix Stout**
+
+MA615 Final Project
+
+December 15, 2025
+
+[GitHub Repository](#)
+:::
