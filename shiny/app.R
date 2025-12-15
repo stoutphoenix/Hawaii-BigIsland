@@ -16,16 +16,16 @@ library(DT)
 # ==============================================================================
 
 # Load all data files
-demographics <- readRDS("../data/demographics.rds")
-race_composition <- readRDS("../data/race_composition.rds")
-climate_monthly <- readRDS("../data/climate_monthly.rds")
-climate_annual <- readRDS("../data/climate_annual.rds")
-economics <- readRDS("../data/economics.rds")
-industry_composition <- readRDS("../data/industry_composition.rds")
-disasters <- readRDS("../data/disasters.rds")
-volcanic_activity <- readRDS("../data/volcanic_activity.rds")
-tsunami_zones <- readRDS("../data/tsunami_zones.rds")
-locations <- readRDS("../data/locations.rds")
+demographics <- readRDS("data/demographics.rds")
+race_composition <- readRDS("data/race_composition.rds")
+climate_monthly <- readRDS("data/climate_monthly.rds")
+climate_annual <- readRDS("data/climate_annual.rds")
+economics <- readRDS("data/economics.rds")
+industry_composition <- readRDS("data/industry_composition.rds")
+disasters <- readRDS("data/disasters.rds")
+volcanic_activity <- readRDS("data/volcanic_activity.rds")
+tsunami_zones <- readRDS("data/tsunami_zones.rds")
+locations <- readRDS("data/locations.rds")
 
 # Color palette
 hawaii_colors <- c(
