@@ -108,6 +108,7 @@ ggplotly(p) %>%
 ```{r}
 #| fig-width: 6
 #| fig-height: 5
+
 aging_data <- data$demographics %>%
   select(year, percent_65_over, percent_under_18) %>%
   pivot_longer(cols = c(percent_65_over, percent_under_18),
@@ -117,8 +118,8 @@ aging_data <- data$demographics %>%
 ggplot(aging_data, aes(x = year, y = percentage, color = group)) +
   geom_line(size = 1.5) +
   geom_point(size = 3) +
-  scale_color_manual(values = c("65 and Over" = "#8B0000",  # or hawaii_colors[["lava"]]
-                                "Under 18" = "#1E90FF")) +  # or hawaii_colors[["ocean"]]
+  scale_color_manual(values = c("65 and Over" = "#8B0000",
+                                "Under 18" = "#1E90FF")) +
   labs(
     title = "Age Distribution Shift",
     x = NULL,
@@ -128,16 +129,17 @@ ggplot(aging_data, aes(x = year, y = percentage, color = group)) +
   theme_minimal(base_size = 14) +
   theme(legend.position = "bottom")
 ```
+
 :::
 
-::: {.column width="50%"}
-### Key Trends
+::: {.column width="50%" style="font-size: 0.6em;"}
+**Key Trends**
 
--   Median age: **38.2 → 40.5**
--   Seniors (65+): **17.2% → 21.1%**
--   Youth (\<18): **21.5% → 19.3%**
+-   Median age: 38.2 → 40.5
+-   Seniors (65+): 17.2% → 21.1%
+-   Youth (<18): 21.5% → 19.3%
 
-### Implications
+**Implications**
 
 -   Healthcare demands ↑
 -   School enrollment ↓
@@ -296,8 +298,8 @@ ggplot(data$economics, aes(x = year, y = unemployment_rate)) +
 ::::: columns
 ::: {.column width="55%"}
 ```{r}
-#| fig-width: 7
-#| fig-height: 6
+#| fig-width: 6
+#| fig-height: 4.5
 
 industry_plot <- data$industry_composition %>%
   arrange(desc(employment_share)) %>%
@@ -318,20 +320,21 @@ ggplot(industry_plot, aes(x = reorder(sector, employment_share),
   theme_minimal(base_size = 14) +
   theme(plot.title = element_text(face = "bold"))
 ```
+
 :::
 
 ::: {.column width="45%"}
-### Tourism Dominance
+**Tourism Dominance**
 
--   **28.5%** of jobs
--   Average wage: **\$42,000**
--   Vulnerability to external shocks
+-   28.5% of jobs
+-   Avg wage: \$42,000
+-   Shock vulnerability
 
-### Higher-Paying Sectors
+**Higher-Paying Sectors**
 
--   Healthcare: **\$62,000**
--   Government: **\$58,000**
--   Construction: **\$52,000**
+-   Healthcare: \$62,000
+-   Government: \$58,000
+-   Construction: \$52,000
 :::
 :::::
 
@@ -395,7 +398,7 @@ ggplot(data$volcanic_activity, aes(x = year)) +
 ## Tsunami Risk
 
 ::::: columns
-::: {.column width="50%"}
+::: {.column width="50%" style="font-size: 0.8em;"}
 ### Population at Risk
 
 | Zone                | Population |
@@ -408,7 +411,7 @@ ggplot(data$volcanic_activity, aes(x = year)) +
 **Total High/Evac: 47,000** (23% of population)
 :::
 
-::: {.column width="50%"}
+::: {.column width="50%" style="font-size: 0.8em;"}
 ### Risk Factors
 
 -   Pacific Ring of Fire
