@@ -17,6 +17,7 @@ This project analyzes Hawaii's Big Island across four key dimensions:
 1. **Quarto Report** (`reports/big_island_report.qmd`) - Comprehensive analysis with visualizations and maps
 2. **Quarto Presentation** (`reports/big_island_presentation.qmd`) - Key findings presentation
 3. **Shiny Web App** (`shiny/app.R`) - Interactive dashboard for data exploration
+   https://stoutphoenix.shinyapps.io/hawaii-big-island-dashboard/
 
 ## Project Structure
 
