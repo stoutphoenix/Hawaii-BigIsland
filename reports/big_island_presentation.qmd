@@ -7,7 +7,6 @@ format:
   revealjs:
     theme: serif
     slide-number: true
-    chalkboard: true
     preview-links: auto
     logo: ""
     css: custom.css
@@ -17,6 +16,9 @@ execute:
   echo: false
   warning: false
   message: false
+editor: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup}
@@ -44,41 +46,41 @@ hawaii_colors <- c(
 
 ## Overview {background-color="#006BA6"}
 
-::: {.columns}
+::::: columns
 ::: {.column width="50%"}
 ### Hawaii's Big Island
 
-- Largest Hawaiian Island
-- 4,028 square miles
-- 206,400 residents (2023)
-- Active volcanic zones
-- Diverse microclimates
+-   Largest Hawaiian Island
+-   4,028 square miles
+-   206,400 residents (2023)
+-   Active volcanic zones
+-   Diverse microclimates
 :::
 
 ::: {.column width="50%"}
 ### Analysis Focus
 
-1. Demographics
-2. Climate
-3. Economics
-4. Natural Disasters
+1.  Demographics
+2.  Climate
+3.  Economics
+4.  Natural Disasters
 :::
-:::
+:::::
 
 ## Executive Summary
 
-::: {.incremental}
-- **Population**: Growing 4.9% since 2015, but aging rapidly
-- **Economy**: Tourism-dependent with $70,200 median income
-- **Climate**: Warming trends, extreme heat days tripled
-- **Hazards**: $800M in volcanic damage (2018), ongoing tsunami risk
+::: incremental
+-   **Population**: Growing 4.9% since 2015, but aging rapidly
+-   **Economy**: Tourism-dependent with \$70,200 median income
+-   **Climate**: Warming trends, extreme heat days tripled
+-   **Hazards**: \$800M in volcanic damage (2018), ongoing tsunami risk
 :::
 
 # Demographics {background-color="#2D6A4F"}
 
 ## Population Growth
 
-```{r}
+```{r, warning=FALSE}
 #| fig-width: 10
 #| fig-height: 6
 
@@ -101,12 +103,11 @@ ggplotly(p) %>%
 
 ## Aging Population
 
-::: {.columns}
+::::: columns
 ::: {.column width="50%"}
 ```{r}
 #| fig-width: 6
 #| fig-height: 5
-
 aging_data <- data$demographics %>%
   select(year, percent_65_over, percent_under_18) %>%
   pivot_longer(cols = c(percent_65_over, percent_under_18),
@@ -116,8 +117,8 @@ aging_data <- data$demographics %>%
 ggplot(aging_data, aes(x = year, y = percentage, color = group)) +
   geom_line(size = 1.5) +
   geom_point(size = 3) +
-  scale_color_manual(values = c("65 and Over" = hawaii_colors["lava"],
-                                 "Under 18" = hawaii_colors["ocean"])) +
+  scale_color_manual(values = c("65 and Over" = "#8B0000",  # or hawaii_colors[["lava"]]
+                                "Under 18" = "#1E90FF")) +  # or hawaii_colors[["ocean"]]
   labs(
     title = "Age Distribution Shift",
     x = NULL,
@@ -132,17 +133,17 @@ ggplot(aging_data, aes(x = year, y = percentage, color = group)) +
 ::: {.column width="50%"}
 ### Key Trends
 
-- Median age: **38.2 → 40.5**
-- Seniors (65+): **17.2% → 21.1%**
-- Youth (<18): **21.5% → 19.3%**
+-   Median age: **38.2 → 40.5**
+-   Seniors (65+): **17.2% → 21.1%**
+-   Youth (\<18): **21.5% → 19.3%**
 
 ### Implications
 
-- Healthcare demands ↑
-- School enrollment ↓
-- Workforce challenges
+-   Healthcare demands ↑
+-   School enrollment ↓
+-   Workforce challenges
 :::
-:::
+:::::
 
 ## Cultural Diversity
 
@@ -157,7 +158,7 @@ ggplot(data$race_composition, aes(x = reorder(category, percentage), y = percent
   coord_flip() +
   scale_y_continuous(limits = c(0, 40), expand = c(0, 0)) +
   labs(
-    title = "No Single Majority - Truly Multicultural",
+    title = "Population Distribution by Race",
     x = NULL,
     y = "Percentage of Population"
   ) +
@@ -206,14 +207,25 @@ ggplot(climate_data) +
 #| fig-width: 11
 #| fig-height: 6
 
+temp_min <- 70
+temp_max <- 95
+
+# Scale extreme heat days to fit in the temperature range
+heat_max <- max(data$climate_annual$extreme_heat_days, na.rm = TRUE)
+scale_factor <- (temp_max - temp_min) / heat_max
+
 ggplot(data$climate_annual, aes(x = year)) +
+  # Use geom_rect instead of geom_col to control where bars start
+  geom_rect(aes(xmin = year - 0.4, xmax = year + 0.4,
+                ymin = temp_min,
+                ymax = temp_min + extreme_heat_days * scale_factor),
+            fill = hawaii_colors["sunset"], alpha = 0.5) +
   geom_line(aes(y = avg_temp_f), color = hawaii_colors["lava"], size = 1.8) +
   geom_point(aes(y = avg_temp_f), color = hawaii_colors["lava"], size = 4) +
-  geom_col(aes(y = extreme_heat_days / 2 + 70),
-           fill = hawaii_colors["sunset"], alpha = 0.5) +
   scale_y_continuous(
     name = "Average Temperature (°F)",
-    sec.axis = sec_axis(~ (. - 70) * 2, name = "Extreme Heat Days")
+    limits = c(temp_min, temp_max),
+    sec.axis = sec_axis(~ (. - temp_min) / scale_factor, name = "Extreme Heat Days")
   ) +
   labs(
     title = "Warming Trend: Extreme Heat Days Tripled",
@@ -224,8 +236,9 @@ ggplot(data$climate_annual, aes(x = year)) +
   theme(plot.title = element_text(face = "bold", size = 18))
 ```
 
-::: {.notes}
-Temperature increased 2.3°F from 2015 to 2023. Extreme heat days (above 90°F) more than tripled.
+::: notes
+Temperature increased 2.3°F from 2015 to 2023. Extreme heat days (above
+90°F) more than tripled.
 :::
 
 # Economics {background-color="#F4A261"}
@@ -280,7 +293,7 @@ ggplot(data$economics, aes(x = year, y = unemployment_rate)) +
 
 ## Industry Breakdown
 
-::: {.columns}
+::::: columns
 ::: {.column width="55%"}
 ```{r}
 #| fig-width: 7
@@ -298,7 +311,7 @@ ggplot(industry_plot, aes(x = reorder(sector, employment_share),
   coord_flip() +
   scale_y_continuous(limits = c(0, 35)) +
   labs(
-    title = "Top 5 Sectors",
+    title = "Top 5 Economic Sectors",
     x = NULL,
     y = "Employment Share (%)"
   ) +
@@ -310,23 +323,23 @@ ggplot(industry_plot, aes(x = reorder(sector, employment_share),
 ::: {.column width="45%"}
 ### Tourism Dominance
 
-- **28.5%** of jobs
-- Average wage: **$42,000**
-- Vulnerability to external shocks
+-   **28.5%** of jobs
+-   Average wage: **\$42,000**
+-   Vulnerability to external shocks
 
 ### Higher-Paying Sectors
 
-- Healthcare: **$62,000**
-- Government: **$58,000**
-- Construction: **$52,000**
+-   Healthcare: **\$62,000**
+-   Government: **\$58,000**
+-   Construction: **\$52,000**
 :::
-:::
+:::::
 
 # Natural Disasters {background-color="#C1121F"}
 
 ## Disaster Impact
 
-```{r}
+```{r, warning=FALSE}
 #| fig-width: 11
 #| fig-height: 6
 
@@ -355,11 +368,11 @@ ggplot(data$disasters, aes(x = year, y = damage_millions, fill = type)) +
 #| fig-height: 6
 
 ggplot(data$volcanic_activity, aes(x = year)) +
-  geom_col(aes(y = eruption_days), fill = hawaii_colors["lava"], alpha = 0.7) +
-  geom_line(aes(y = earthquakes_m3plus / 5),
-            color = hawaii_colors["ocean"], size = 1.5) +
-  geom_point(aes(y = earthquakes_m3plus / 5),
-             color = hawaii_colors["ocean"], size = 4) +
+  geom_col(aes(y = eruption_days, fill = "Eruption Days"), alpha = 0.7) +
+  geom_line(aes(y = earthquakes_m3plus / 5, color = "Earthquakes (M3+)"), size = 1.5) +
+  geom_point(aes(y = earthquakes_m3plus / 5, color = "Earthquakes (M3+)"), size = 4) +
+  scale_fill_manual(name = NULL, values = c("Eruption Days" = unname(hawaii_colors["lava"]))) +
+  scale_color_manual(name = NULL, values = c("Earthquakes (M3+)" = unname(hawaii_colors["ocean"]))) +
   scale_y_continuous(
     name = "Eruption Days per Year",
     sec.axis = sec_axis(~ . * 5, name = "Earthquakes (M3+)")
@@ -369,25 +382,28 @@ ggplot(data$volcanic_activity, aes(x = year)) +
     x = "Year"
   ) +
   theme_minimal(base_size = 15) +
-  theme(plot.title = element_text(face = "bold", size = 17))
+  theme(
+    plot.title = element_text(face = "bold", size = 17),
+    legend.position = "bottom"
+  )
 ```
 
-::: {.notes}
+::: notes
 2018 saw peak activity with 214 eruption days and 2,345 earthquakes M3+
 :::
 
 ## Tsunami Risk
 
-::: {.columns}
+::::: columns
 ::: {.column width="50%"}
 ### Population at Risk
 
-| Zone | Population |
-|------|------------|
+| Zone                | Population |
+|---------------------|------------|
 | **Evacuation Zone** | **12,000** |
-| High Risk | 35,000 |
-| Medium Risk | 58,000 |
-| Low Risk | 101,400 |
+| High Risk           | 35,000     |
+| Medium Risk         | 58,000     |
+| Low Risk            | 101,400    |
 
 **Total High/Evac: 47,000** (23% of population)
 :::
@@ -395,107 +411,89 @@ ggplot(data$volcanic_activity, aes(x = year)) +
 ::: {.column width="50%"}
 ### Risk Factors
 
-- Pacific Ring of Fire
-- Low-lying coastal areas
-- Limited evacuation routes
-- 24/7 warning system active
+-   Pacific Ring of Fire
+-   Low-lying coastal areas
+-   Limited evacuation routes
+-   24/7 warning system active
 
 ### Recent Events
 
-- 2011: Japan tsunami
-- Regular warning drills
-- Updated evacuation maps
+-   2011: Japan tsunami
+-   Regular warning drills
+-   Updated evacuation maps
 :::
-:::
+:::::
 
 # Key Findings {background-color="#2D6A4F"}
 
 ## Synthesis
 
-::: {.incremental}
-**Demographic Challenge**
-- Aging population (21% seniors) → healthcare pressures
-- Declining youth population → workforce concerns
+::: incremental
+**Demographic Challenge** - Aging population (21% seniors) → healthcare
+pressures - Declining youth population → workforce concerns
 
-**Economic Vulnerability**
-- Tourism dependence (28.5%) → shock sensitivity
-- Strong recovery post-COVID → resilience
+**Economic Vulnerability** - Tourism dependence (28.5%) → shock
+sensitivity - Strong recovery post-COVID → resilience
 
-**Climate Concerns**
-- Clear warming trend (+2.3°F)
-- Extreme heat days tripled → adaptation needed
+**Climate Concerns** - Clear warming trend (+2.3°F) - Extreme heat days
+tripled → adaptation needed
 
-**Persistent Hazards**
-- Active volcanoes ($800M+ damages)
-- 47,000 in tsunami risk zones
+**Persistent Hazards** - Active volcanoes (\$800M+ damages) - 47,000 in
+tsunami risk zones
 :::
 
 ## Strategic Priorities
 
-::: {.columns}
+::::: columns
 ::: {.column width="50%"}
 ### Short Term
 
-1. Disaster preparedness
-2. Climate adaptation
-3. Tourism recovery support
-4. Healthcare capacity
+1.  Disaster preparedness
+2.  Climate adaptation
+3.  Tourism recovery support
+4.  Healthcare capacity
 :::
 
 ::: {.column width="50%"}
 ### Long Term
 
-1. Economic diversification
-2. Sustainable development
-3. Infrastructure resilience
-4. Demographic planning
+1.  Economic diversification
+2.  Sustainable development
+3.  Infrastructure resilience
+4.  Demographic planning
 :::
-:::
+:::::
 
 ## Conclusions {background-color="#006BA6"}
 
-::: {.r-fit-text}
-**Hawaii's Big Island stands at a crossroads**
-:::
 
-<br>
-
-::: {.columns}
+::::: columns
 ::: {.column width="50%"}
 ### Strengths
-- Economic recovery
-- Cultural diversity
-- Natural beauty
-- Tourism appeal
+
+-   Economic recovery
+-   Cultural diversity
+-   Natural beauty
+-   Tourism appeal
 :::
 
 ::: {.column width="50%"}
 ### Challenges
-- Climate change
-- Natural hazards
-- Aging population
-- Economic concentration
+
+-   Climate change
+-   Natural hazards
+-   Aging population
+-   Economic concentration
 :::
-:::
+:::::
 
-<br>
 
-**Sustainable planning is essential for the island's future prosperity and resilience**
-
-## {background-color="#219EBC"}
-
-::: {.r-fit-text}
-Questions?
-:::
-
-<br><br>
-
-::: {.center}
+::: center
 **Phoenix Stout**
 
 MA615 Final Project
 
 December 15, 2025
 
-[GitHub Repository](#)
+[GitHub Repository](https://github.com/stoutphoenix/Hawaii-BigIsland)
 :::

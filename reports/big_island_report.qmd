@@ -56,7 +56,7 @@ data <- load_all_data()
 validate_all_data()
 ```
 
-Hawaii's Big Island, officially Hawaii County, is the largest and southernmost island in the Hawaiian archipelago. With an area of 4,028 square miles, it comprises nearly 63% of the total land area of the State of Hawaii. The island is home to diverse ecosystems, from tropical rainforests receiving over 200 inches of rain annually to arid deserts, and from sea level beaches to the summit of Mauna Kea at 13,796 feet.
+Hawaii's Big Island, officially Hawaii County, is the largest and southernmost island in the Hawaiian archipelago. With an area of 4,028 square miles, it comprises nearly 63% of the total land area of the State of Hawaii. The island is home to diverse ecosystems, from tropical rainforests receiving over 200 inches of rain annually to arid deserts, and from sea level beaches to the summit of the volcanic Mauna Kea at 13,796 feet.
 
 This analysis examines the island through multiple lenses to provide a holistic understanding of its current state and recent trends.
 
@@ -194,27 +194,33 @@ p1
 #| fig-width: 10
 #| fig-height: 6
 
-p2 <- ggplot(data$climate_annual, aes(x = year)) +
-  geom_line(aes(y = avg_temp_f, color = "Temperature"), size = 1.2) +
-  geom_point(aes(y = avg_temp_f, color = "Temperature"), size = 3) +
-  geom_col(aes(y = extreme_heat_days / 2 + 70, fill = "Extreme Heat Days"), alpha = 0.6) +
-  scale_y_continuous(
-    name = "Average Annual Temperature (°F)",
-    sec.axis = sec_axis(~ (. - 70) * 2, name = "Extreme Heat Days (>90°F)")
-  ) +
-  scale_color_manual(values = c("Temperature" = hawaii_colors["lava"])) +
-  scale_fill_manual(values = c("Extreme Heat Days" = hawaii_colors["sunset"])) +
-  labs(
-    title = "Climate Change Indicators",
-    subtitle = "Rising temperatures and increasing extreme heat days",
-    x = "Year",
-    color = NULL,
-    fill = NULL
-  ) +
-  theme_bigisland() +
-  theme(legend.position = "bottom")
+temp_min <- 70
+temp_max <- 95
 
-p2
+# Scale extreme heat days to fit in the temperature range
+heat_max <- max(data$climate_annual$extreme_heat_days, na.rm = TRUE)
+scale_factor <- (temp_max - temp_min) / heat_max
+
+ggplot(data$climate_annual, aes(x = year)) +
+  # Use geom_rect instead of geom_col to control where bars start
+  geom_rect(aes(xmin = year - 0.4, xmax = year + 0.4,
+                ymin = temp_min,
+                ymax = temp_min + extreme_heat_days * scale_factor),
+            fill = hawaii_colors["sunset"], alpha = 0.5) +
+  geom_line(aes(y = avg_temp_f), color = hawaii_colors["lava"], size = 1.8) +
+  geom_point(aes(y = avg_temp_f), color = hawaii_colors["lava"], size = 4) +
+  scale_y_continuous(
+    name = "Average Temperature (°F)",
+    limits = c(temp_min, temp_max),
+    sec.axis = sec_axis(~ (. - temp_min) / scale_factor, name = "Extreme Heat Days")
+  ) +
+  labs(
+    title = "Warming Trend: Extreme Heat Days Tripled",
+    subtitle = "12 days (2015) → 38 days (2023)",
+    x = "Year"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(face = "bold", size = 18))
 ```
 
 @fig-climate-trends reveals concerning trends:
