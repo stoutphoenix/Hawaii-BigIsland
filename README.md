@@ -1,8 +1,8 @@
 # MA615 Final Project: Hawaii's Big Island
 
 **Author:** Phoenix Stout
+
 **Course:** MA615 Fall 2025
-**Due Date:** December 15, 2025
 
 ## Project Overview
 
